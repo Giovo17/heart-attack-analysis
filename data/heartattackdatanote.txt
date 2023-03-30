@@ -1,0 +1,24 @@
+For information about the data, see:
+
+https://www.kaggle.com/nareshbhat/health-care-data-set-on-heart-attack-possibility
+
+Target Variable to predicted: "target" (in the training set).
+Two classes: 0 and 1 
+
+The folder contains two datasets:
+
+train data: about 80% of the units of the original dataset
+test data: about 20% of the units of the original dataset
+
+The test set does not contain the target variable. The true values of the target variable will be discussed during the exam.
+
+Index of the report:
+
+1. Exploratory data analysis of the train data set
+2. Modeling the train data according to three different approaches
+   a. logistic regression
+   b. random forests
+   c. neural networks
+3. Compare the results and choose the best model
+4. Apply the model to the test data and predict the target values
+5. Provide the file of the test data with the predicted values
