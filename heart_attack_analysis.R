@@ -11,6 +11,9 @@ library(corrplot)
 library(caret)
 library(MASS)
 library(pROC)
+library(pracma)
+library(randomForest)
+library(dplyr)
 
 
 
@@ -98,9 +101,9 @@ print(xtable::xtable(skimr::skim(df_train), type="latex", digits=2))
 jpeg(file="../LateX_project/images/chapter1/age_histogram.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=age)) +
-  geom_histogram(binwidth=4, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_histogram(aes(y=after_stat(density)), binwidth=3, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position='identity') +
   theme(plot.title=element_text(size=15)) +
-  ylab("frequency") + 
+  ylab("density") + 
   theme_minimal() +
   theme(text = element_text(size = 20))
 
@@ -110,13 +113,14 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/age_histogram_hue.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=age, fill=target)) +
-  geom_histogram(binwidth=3, color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_density(aes(y=after_stat(density)), color="#6b9bc3", alpha=0.7, position='identity') +
   theme(plot.title=element_text(size=15)) +
   scale_fill_manual(values=c("green", "orange")) + 
-  ylab("frequency") + 
+  ylab("density") + 
   labs(fill="") + 
   theme_minimal() +
   theme(text = element_text(size = 20), legend.position="none")
+
 
 dev.off()
 
@@ -126,11 +130,11 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/trestbps_histogram.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=trestbps)) +
-  geom_histogram(binwidth=9, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_histogram(aes(y=after_stat(density)), binwidth=9, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
   geom_vline(aes(xintercept = 130), colour="red") +
   geom_rug(aes(x=trestbps, y = NULL)) +
   theme(plot.title=element_text(size=15)) +
-  ylab("frequency") + 
+  ylab("density") + 
   theme_minimal() +
   theme(text = element_text(size = 20))
 
@@ -140,11 +144,11 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/trestbps_histogram_hue.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=trestbps, fill=target)) + 
-  geom_histogram(binwidth=9, color="#6b9bc3", alpha=0.7, position = 'identity') + 
+  geom_density(aes(y=after_stat(density)), color="#6b9bc3", alpha=0.7, position='identity') +
   geom_vline(aes(xintercept = 130), colour="red") + 
   geom_rug(aes(x=trestbps, y = NULL)) + 
   scale_fill_manual(values=c("green", "orange")) + 
-  ylab("frequency") + 
+  ylab("density") + 
   labs(fill="") + 
   theme_minimal() + 
   theme(text = element_text(size = 20), legend.position="none")
@@ -158,11 +162,11 @@ print(moments::skewness(df_train$trestbps))
 jpeg(file="../LateX_project/images/chapter1/cholesterol_histogram.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=chol)) +
-  geom_histogram(binwidth=20, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_histogram(aes(y=after_stat(density)), binwidth=20, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
   geom_vline(aes(xintercept = 240), colour="red") +
   geom_rug(aes(x=chol, y = NULL)) +
   theme(plot.title=element_text(size=15)) +
-  ylab("frequency") + 
+  ylab("density") + 
   theme_minimal() +
   theme(text = element_text(size = 20))
 
@@ -172,11 +176,11 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/cholesterol_histogram_hue.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=chol, fill=target)) +
-  geom_histogram(binwidth=20, color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_density(aes(y=after_stat(density)), color="#6b9bc3", alpha=0.7, position='identity') +
   geom_vline(aes(xintercept = 240), colour="red") +
   geom_rug(aes(x=chol, y = NULL)) +
   scale_fill_manual(values=c("green", "orange")) +
-  ylab("frequency") + 
+  ylab("density") + 
   labs(fill="") +
   theme_minimal() +
   theme(text = element_text(size = 20), legend.position="none")
@@ -203,10 +207,10 @@ print(boxplot.stats(df_train$chol)$out)
 jpeg(file="../LateX_project/images/chapter1/thalach_histogram.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=thalach)) +
-  geom_histogram(binwidth=10, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_histogram(aes(y=after_stat(density)), binwidth=10, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
   geom_rug(aes(x=thalach, y = NULL)) +
   theme(plot.title=element_text(size=15)) +
-  ylab("frequency") + 
+  ylab("density") + 
   theme_minimal() +
   theme(text = element_text(size = 20))
 
@@ -216,10 +220,10 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/thalach_histogram_hue.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=thalach, fill=target)) +
-  geom_histogram(binwidth=10, color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_density(aes(y=after_stat(density)), color="#6b9bc3", alpha=0.7, position='identity') +
   geom_rug(aes(x=thalach, y = NULL)) +
   scale_fill_manual(values=c("green", "orange")) +
-  ylab("frequency") + 
+  ylab("density") + 
   labs(fill="") +
   theme_minimal() +
   theme(text = element_text(size = 20), legend.position="none")
@@ -244,10 +248,10 @@ print(moments::skewness(df_train_sick$thalach))
 jpeg(file="../LateX_project/images/chapter1/oldpeak_histogram.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=oldpeak)) +
-  geom_histogram(binwidth=0.4, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_histogram(aes(y=after_stat(density)), binwidth=0.4, fill="#6b9bc3", color="#6b9bc3", alpha=0.7, position = 'identity') +
   geom_rug(aes(x=oldpeak, y = NULL)) +
   theme(plot.title=element_text(size=15)) +
-  ylab("frequency") + 
+  ylab("density") + 
   theme_minimal() +
   theme(text = element_text(size = 20))
 
@@ -257,10 +261,10 @@ dev.off()
 jpeg(file="../LateX_project/images/chapter1/oldpeak_histogram_hue.jpeg", width=6, height=6, units='in', res=200)
 
 ggplot(df_train, aes(x=oldpeak, fill=target)) +
-  geom_histogram(binwidth=0.4, color="#6b9bc3", alpha=0.7, position = 'identity') +
+  geom_density(aes(y=after_stat(density)), color="#6b9bc3", alpha=0.7, position='identity') +
   geom_rug(aes(x=oldpeak, y = NULL)) +
   scale_fill_manual(values=c("green", "orange")) +
-  ylab("frequency") + 
+  ylab("density") + 
   labs(fill="") +
   theme_minimal() +
   theme(text = element_text(size = 20), legend.position="none")
@@ -277,14 +281,28 @@ table(df_train$oldpeak)
 
 df_train$target = factor(df_train$target, levels=c(0,1), labels=c("healthy", "sick"))
 
-jpeg(file="../LateX_project/images/chapter1/target_barplot.jpeg", width=6, height=6, units='in', res=200)
 
-ggplot(df_train, aes(x=target)) +
-  geom_bar(color="#6b9bc3", fill=rgb(0.1,0.4,0.5,0.7) ) + 
-  geom_text(stat='count', aes(label=paste(after_stat(count), " (", round(after_stat(count)/nrow(df_train)*100, digits=2), "%)", sep="")), vjust=2, size=5) +
-  xlab("target") + 
-  theme_minimal() +
-  theme(text = element_text(size = 20)) 
+df_pie_target <- df_train %>% 
+  group_by(target) %>% # Variable to be transformed
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = `n` / sum(`n`)) %>% 
+  arrange(perc) %>%
+  mutate(labels = paste(n, " (", scales::percent(perc), ")", sep=""))
+
+
+jpeg(file="../LateX_project/images/chapter1/target_pie.jpeg", width=6, height=6, units='in', res=200)
+
+ggplot(df_pie_target, aes(x = "", y = perc, fill = target)) +
+  geom_col(color = "black") +
+  geom_label(aes(label = labels), color = c("black", "black"),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Target")) +
+  scale_fill_manual(values=c("green", "orange")) +
+  coord_polar(theta = "y") + 
+  theme_void() +
+  theme(text = element_text(size = 20))
 
 dev.off()
 
@@ -296,14 +314,28 @@ df_train$target = factor(df_train$target, levels=c("healthy", "sick"), labels=c(
 
 df_train$sex = factor(df_train$sex, levels=c(0,1), labels=c("female", "male"))
 
-jpeg(file="../LateX_project/images/chapter1/sex_barplot.jpeg", width=6, height=6, units='in', res=200)
 
-ggplot(df_train, aes(x=sex)) +
-  geom_bar(color="#6b9bc3", fill=rgb(0.1,0.4,0.5,0.7) ) + 
-  geom_text(stat='count', aes(label=paste(after_stat(count), " (", round(after_stat(count)/nrow(df_train)*100, digits=2), "%)", sep="")), vjust=2, size=5) +
-  xlab("sex") + 
-  theme_minimal() +
-  theme(text = element_text(size = 20)) 
+df_pie_sex <- df_train %>% 
+  group_by(sex) %>% # Variable to be transformed
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = `n` / sum(`n`)) %>% 
+  arrange(perc) %>%
+  mutate(labels = paste(n, " (", scales::percent(perc), ")", sep=""))
+
+
+jpeg(file="../LateX_project/images/chapter1/sex_pie.jpeg", width=6, height=6, units='in', res=200)
+
+ggplot(df_pie_sex, aes(x = "", y = perc, fill = sex)) +
+  geom_col(color = "black") +
+  geom_label(aes(label = labels), color = c("black", "black"),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Sex")) +
+  scale_fill_manual(values=c("green", "orange")) +
+  coord_polar(theta = "y") + 
+  theme_void() +
+  theme(text = element_text(size = 20))
 
 dev.off()
 
@@ -447,7 +479,6 @@ validation_metrics = function(target, prediction) {
 }
 
 
-
 model = "glm_all_05"
 graphs = validation_metrics(df_validation$target, df_validation$predicted_class)
 
@@ -492,36 +523,6 @@ glm_valid_2[glm_valid_2 < 0.5] = 0
 df_validation = data.frame(cbind(df_validation, predicted_class = glm_valid_2))
 
 
-validation_metrics = function(target, prediction) {
-  
-  cm = caret::confusionMatrix(factor(prediction), factor(target), dnn = c("predicted", "true_values"))
-  plt_cm = as.data.frame(cm$table)
-  
-  cf_graphs = ggplot(data=plt_cm, aes(x=predicted, y=true_values, fill=Freq)) +
-    geom_tile() + geom_text(aes(label=Freq)) +
-    scale_fill_gradient(low="white", high="#6b9bc3") +
-    labs(x = "True values", y = "Predicted") +
-    theme_minimal() +
-    theme(text = element_text(size = 20))
-  
-  graphs = list(cf_graphs)
-  
-  cm = as.matrix(table(Actual=target, Predicted=prediction))
-  accuracy = (cm[2,2]+cm[1,1]) / (cm[2,2]+cm[1,1]+cm[1,2]+cm[2,1])   # (tp+tn)/(tp+tn+fp+fn)
-  error_rate = 1 - accuracy
-  specificity = cm[1,1] / (cm[1,2]+cm[1,1])   # tn/(fp+tn)
-  sensitivity = cm[2,2] / (cm[1,2]+cm[2,2])   # tp/(tp+fp)
-  auc = pROC::auc(target, prediction)
-  
-  metrics = data.frame(accuracy, error_rate, specificity, sensitivity, auc)
-  colnames(metrics) = c("Accuracy", "Error rate", "Specificity", "Sensitivity", "AUC")
-  print(xtable::xtable(metrics, type="latex", digits=2))
-  
-  return(graphs)
-  
-}
-
-
 
 model = "glm_thirdbest_05"
 graphs = validation_metrics(df_validation$target, df_validation$predicted_class)
@@ -541,16 +542,55 @@ dev.off()
 
 
 
-
-
-
-
-
-
+df_validation = subset(df_validation, select = -predicted_class)
 
 
 
 ### 2b. random forests ###
+
+mtry = pracma::ceil(sqrt(ncol(df_train)-1))
+
+model_rf = randomForest::randomForest(target ~ ., data=df_training, mtry=mtry, importance=TRUE)
+
+print(model_rf)
+print(xtable::xtable(model_rf$confusion, type="latex", digits=2))
+
+
+rf_valid = predict(model_rf, df_validation)
+
+rf_valid = as.data.frame(rf_valid)
+df_validation = merge(df_validation, rf_valid, by="row.names")
+df_validation$target = as.numeric(df_validation$target)
+df_validation$rf_valid = as.numeric(df_validation$rf_valid)
+df_validation$target = plyr::mapvalues(df_validation$target, c(2, 1), c(1, 0))
+df_validation$rf_valid = plyr::mapvalues(df_validation$rf_valid, c(2, 1), c(1, 0))
+
+
+model = "rf"
+graphs = validation_metrics(df_validation$target, df_validation$rf_valid)
+
+
+jpeg(file=paste("../LateX_project/images/chapter2/confusion_matrix_", model, ".jpeg", sep=""), width=6, height=6, units='in', res=200)
+graphs[1]
+dev.off()
+
+
+roc_curve = pROC::roc(as.numeric(df_validation$target), as.numeric(df_validation$rf_valid))
+
+jpeg(file=paste("../LateX_project/images/chapter2/roc_curve_", model, ".jpeg", sep=""), width=6, height=6, units='in', res=200)
+ggroc(roc_curve, colour = '#6b9bc3', size = 2) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
+dev.off()
+
+
+# Feature importance
+
+importance(model_rf)
+
+jpeg(file="../LateX_project/images/chapter2/variable_importance_rf.jpeg", width=10, height=6, units='in', res=200)
+varImpPlot(model_rf, main = "Importance of each variable")
+dev.off()
 
 
 

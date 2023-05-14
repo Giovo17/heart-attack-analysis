@@ -8,14 +8,13 @@ Dataset credits: [Kaggle](https://www.kaggle.com/datasets/nareshbhat/health-care
 
 ## Index of the report:
 
-1. Exploratory data analysis of the train data set
-2. Modeling the train data according to three different approaches
-    - logistic regression
-    - random forests
-    - neural networks
-3. Compare the results and choose the best model
-4. Apply the model to the test data and predict the target values
-5. Provide the file of the test data with the predicted values
+1. Introduction and data exploration
+2. Data modeling
+   - logistic regression
+   - random forests
+   - neural networks
+3. Results
+4. Conclusions
 
 ## License
 
