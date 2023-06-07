@@ -14,7 +14,6 @@ Dataset credits: [Kaggle](https://www.kaggle.com/datasets/nareshbhat/health-care
    - random forests
    - neural networks
 3. Results
-4. Conclusions
 
 ## License
 
