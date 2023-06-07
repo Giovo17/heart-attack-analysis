@@ -14,7 +14,10 @@ library(pROC)
 library(pracma)
 library(randomForest)
 library(dplyr)
-
+library(mltools)
+library(data.table)
+library(tensorflow)
+library(keras)
 
 
 set.seed(17)
@@ -34,16 +37,14 @@ df_test = read.csv("data/heart_attack_test.csv")
 # Rename rows
 row.names(df_train) = df_train$X
 row.names(df_test) = df_test$X
-df_train = subset(df_train, select = -X )
-df_test = subset(df_test, select = -X )
+df_train = subset(df_train, select = -X)
+df_test = subset(df_test, select = -X)
 
 
 head(df_train)
 print(xtable::xtable(head(df_train), type="latex", digits=2))
 
 head(df_test)
-print(xtable::xtable(head(df_test), type="latex", digits=2))
-
 
 
 str(df_train)
@@ -61,6 +62,14 @@ df_train$ca = as.factor(df_train$ca)
 df_train$thal = as.factor(df_train$thal)
 df_train$target = as.factor(df_train$target)
 
+df_test$sex = as.factor(df_test$sex)
+df_test$cp = as.factor(df_test$cp)
+df_test$fbs = as.factor(df_test$fbs)
+df_test$restecg = as.factor(df_test$restecg)
+df_test$exang = as.factor(df_test$exang)
+df_test$slope = as.factor(df_test$slope)
+df_test$ca = as.factor(df_test$ca)
+df_test$thal = as.factor(df_test$thal)
 
 
 levels(df_train$sex)
@@ -90,8 +99,6 @@ df_train = unique(df_train)
 
 skimr::skim(df_train)
 print(xtable::xtable(skimr::skim(df_train), type="latex", digits=2))
-
-
 
 
 
@@ -411,11 +418,6 @@ dev.off()
 
 
 
-
-
-
-
-
 ### -------------------------------------------------------------------------------------------------------
 ### 2. Data modeling ###
 
@@ -427,7 +429,6 @@ trainIndex = caret::createDataPartition(df_train$target, p = 0.8, list = FALSE, 
 
 df_validation = df_train[-trainIndex,]
 df_training = df_train[trainIndex,]
-
 
 
 # Using all variables
@@ -472,7 +473,7 @@ validation_metrics = function(target, prediction) {
   
   metrics = data.frame(accuracy, error_rate, specificity, sensitivity, auc)
   colnames(metrics) = c("Accuracy", "Error rate", "Specificity", "Sensitivity", "AUC")
-  print(xtable::xtable(metrics, type="latex", digits=2))
+  print(xtable::xtable(metrics, type="latex", digits=3))
   
   return(graphs)
   
@@ -504,10 +505,12 @@ MASS::stepAIC(model_glm_1, direction="both")
 
 
 
+# Reset training and validation set
+df_validation = df_train[-trainIndex,]
+df_training = df_train[trainIndex,]
 
-df_validation = subset(df_validation, select = -predicted_class)
 
-# Using only sex + cp + chol + thalach + exang + slope + ca + thal
+# Model 2: Using only sex + cp + chol + thalach + exang + slope + ca + thal
 model_glm_2 = glm(data=df_training, target~sex + cp + chol + thalach + exang + slope + ca + thal, family=binomial)
 
 summary(model_glm_2)
@@ -542,11 +545,15 @@ dev.off()
 
 
 
-df_validation = subset(df_validation, select = -predicted_class)
+# Reset training and validation set
+df_validation = df_train[-trainIndex,]
+df_training = df_train[trainIndex,]
 
 
-
+### -------------------------------------------------------------------------------------------------------
 ### 2b. random forests ###
+
+set.seed(17)
 
 mtry = pracma::ceil(sqrt(ncol(df_train)-1))
 
@@ -593,18 +600,93 @@ varImpPlot(model_rf, main = "Importance of each variable")
 dev.off()
 
 
+# Reset training and validation set
+df_validation = df_train[-trainIndex,]
+df_training = df_train[trainIndex,]
 
 
-
-
-
+### -------------------------------------------------------------------------------------------------------
 ### 2c. neural networks ###
 
 
+# Data scaling
+df_training_scaled = df_training %>% mutate(across(where(is.numeric), scale))
+df_validation_scaled = df_validation %>% mutate(across(where(is.numeric), scale))
+
+# Onehot encoding
+df_training_scaled = as.data.frame(mltools::one_hot(as.data.table(df_training_scaled), cols=c("cp", "restecg", "slope", "ca", "thal")))
+df_validation_scaled = as.data.frame(mltools::one_hot(as.data.table(df_validation_scaled), cols=c("cp", "restecg", "slope", "ca", "thal")))
+
+#Convert factor to numeric
+indexes_tr <- sapply(df_training_scaled, is.factor)
+df_training_scaled[indexes_tr] <- lapply(df_training_scaled[indexes_tr], function(x) as.numeric(as.character(x)))
+indexes_val <- sapply(df_validation_scaled, is.factor)
+df_validation_scaled[indexes_val] <- lapply(df_validation_scaled[indexes_val], function(x) as.numeric(as.character(x)))
+
+
+# Extract X_train, y_train, X_validation, y_validation
+X_train = model.matrix(target ~. - 1, data = df_training_scaled)
+X_validation = model.matrix(target ~. - 1, data = df_validation_scaled)
+y_train = to_categorical(df_training_scaled$target)
+y_validation = to_categorical(df_validation_scaled$target)
+
+
+tensorflow::set_random_seed(17)
+
+model_ffnn =  keras_model_sequential() %>%
+  layer_dense(units=7, activation='relu', input_shape=ncol(X_train)) %>%
+  layer_dense(units=4, activation='relu')  %>%
+  layer_dense(units=2, activation="sigmoid")
+
+summary(model_ffnn)
+
+
+model_ffnn %>% compile(
+  loss = loss_binary_crossentropy,
+  optimizer = optimizer_adam(learning_rate = 0.001),
+  metrics = metric_binary_accuracy
+)
+
+
+history = model_ffnn %>% fit(
+  x = X_train,
+  y = y_train,
+  epochs = 70,
+  batch_size = 32,
+  validation_data = list(X_validation, y_validation)
+)
+
+jpeg(file="../LateX_project/images/chapter2/nn_graphs.jpeg", width=10, height=6, units='in', res=200)
+plot(history)
+dev.off()
+
+
+model_ffnn %>% evaluate(X_train, y_train)
+
+model_ffnn %>% evaluate(X_validation, y_validation)
+
+
+# Confusion matrix
+y_val_predicted = as.matrix(model_ffnn %>% predict(X_validation) %>% `>`(0.5) %>% k_cast("int32"))
+cf_matrix = table(y_val_predicted[,2], y_validation[,2]) 
 
 
 
+# Print confusion matrix and ROC curve
+model = "ffnn"
+graphs = validation_metrics(y_validation[,2], y_val_predicted[,2])
 
+jpeg(file=paste("../LateX_project/images/chapter2/confusion_matrix_", model, ".jpeg", sep=""), width=6, height=6, units='in', res=200)
+graphs[1]
+dev.off()
+
+roc_curve = pROC::roc(y_validation[,2], y_val_predicted[,2])
+
+jpeg(file=paste("../LateX_project/images/chapter2/roc_curve_", model, ".jpeg", sep=""), width=6, height=6, units='in', res=200)
+ggroc(roc_curve, colour = '#6b9bc3', size = 2) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
+dev.off()
 
 
 
@@ -613,10 +695,28 @@ dev.off()
 ### 3. Results ###
 
 
+# Making prediction with best model: feed forward neural network
 
 
+# Data scaling
+df_test_scaled = subset(df_test, select = -id_number) %>% mutate(across(where(is.numeric), scale))
+
+# Onehot encoding
+df_test_scaled = as.data.frame(mltools::one_hot(as.data.table(df_test_scaled), cols=c("cp", "restecg", "slope", "ca", "thal")))
+
+#Convert factor to numeric
+indexes_test <- sapply(df_test, is.factor)
+df_test_scaled[indexes_test] <- lapply(df_test[indexes_test], function(x) as.numeric(as.character(x)))
+
+# Extract X_test
+X_test = model.matrix( ~. - 1, data = df_test_scaled)
 
 
+predictions = model_ffnn %>% predict(X_test) %>% k_argmax()
 
+df_test$predicted_target = as.array(predictions)
 
+head(df_test)
+
+write.csv(df_test, file="data/heart_attack_test_results.csv")
 
