@@ -26,13 +26,13 @@ set.seed(17)
 # Import dataset
 
 # Online from github repo
-#df_test = read.csv('https://raw.githubusercontent.com/Giovo17/heart-attack-analysis/main/data/heart_attack_test.csv')
-#df_train = read.csv('https://raw.githubusercontent.com/Giovo17/heart-attack-analysis/main/data/heart_attack_train.csv')
+df_test = read.csv('https://raw.githubusercontent.com/Giovo17/heart-attack-analysis/main/data/heart_attack_test.csv')
+df_train = read.csv('https://raw.githubusercontent.com/Giovo17/heart-attack-analysis/main/data/heart_attack_train.csv')
 
 # Local from disk
-setwd("~/Documents/University/Data\ Science/1°\ Year\ (2022-2023)/Statistical\ Learning\ (1)/Exam\ -\ Statistical\ Learning/report/heart-attack-analysis")
-df_train = read.csv("data/heart_attack_train.csv")
-df_test = read.csv("data/heart_attack_test.csv")
+#setwd("~/Documents/University/Data\ Science/1°\ Year\ (2022-2023)/Statistical\ Learning\ (1)/Exam\ -\ Statistical\ Learning/report/heart-attack-analysis")
+#df_train = read.csv("data/heart_attack_train.csv")
+#df_test = read.csv("data/heart_attack_test.csv")
 
 # Rename rows
 row.names(df_train) = df_train$X
@@ -99,6 +99,8 @@ df_train = unique(df_train)
 
 skimr::skim(df_train)
 print(xtable::xtable(skimr::skim(df_train), type="latex", digits=2))
+
+
 
 
 
@@ -396,17 +398,17 @@ GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=target),
 dev.off()
 
 
-GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=sex), 
-                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
+#GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=sex), 
+#                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
 
-GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=fbs), 
-                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
+#GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=fbs), 
+#                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
 
-GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=cp), 
-                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
+#GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=cp), 
+#                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
 
-GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=slope), 
-                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
+#GGally::ggpairs(df_train, columns = c(1,4,5,8,10), ggplot2::aes(colour=slope), 
+#                upper = list(continuous = "points"), diag = list(continuous = "barDiag"))
 
 
 jpeg(file="../LateX_project/images/chapter1/corplot.jpeg", width=6, height=6, units='in', res=200)
@@ -414,6 +416,11 @@ jpeg(file="../LateX_project/images/chapter1/corplot.jpeg", width=6, height=6, un
 corrplot::corrplot.mixed(cor(df_train[,c(1,4,5,8,10)]), upper = "ellipse")
 
 dev.off()
+
+
+
+
+
 
 
 
@@ -656,8 +663,30 @@ history = model_ffnn %>% fit(
   validation_data = list(X_validation, y_validation)
 )
 
-jpeg(file="../LateX_project/images/chapter2/nn_graphs.jpeg", width=10, height=6, units='in', res=200)
-plot(history)
+
+history_dataframe = data.frame(
+  epoch = c(1:history$params$epochs, 1:history$params$epochs),
+  loss = c(history$metrics$loss, history$metrics$val_loss),
+  binary_accuracy = c(history$metrics$binary_accuracy, history$metrics$val_binary_accuracy),
+  category = c(rep("training", history$params$epochs), rep("validation", history$params$epochs))
+)
+
+
+jpeg(file="../LateX_project/images/chapter2/loss_over_epochs.jpeg", width=10, height=6, units='in', res=200)
+ggplot(data=history_dataframe, aes(x=epoch, y=loss, col=category)) +
+  geom_point() +
+  geom_smooth(se=F) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
+dev.off()
+
+
+jpeg(file="../LateX_project/images/chapter2/accuracy_over_epochs.jpeg", width=10, height=6, units='in', res=200)
+ggplot(data=history_dataframe, aes(x=epoch, y=binary_accuracy, col=category)) +
+  geom_point() +
+  geom_smooth(se=F) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
 dev.off()
 
 
@@ -668,8 +697,6 @@ model_ffnn %>% evaluate(X_validation, y_validation)
 
 # Confusion matrix
 y_val_predicted = as.matrix(model_ffnn %>% predict(X_validation) %>% `>`(0.5) %>% k_cast("int32"))
-cf_matrix = table(y_val_predicted[,2], y_validation[,2]) 
-
 
 
 # Print confusion matrix and ROC curve
@@ -687,6 +714,7 @@ ggroc(roc_curve, colour = '#6b9bc3', size = 2) +
   theme_minimal() +
   theme(text = element_text(size = 20))
 dev.off()
+
 
 
 
@@ -712,7 +740,7 @@ df_test_scaled[indexes_test] <- lapply(df_test[indexes_test], function(x) as.num
 X_test = model.matrix( ~. - 1, data = df_test_scaled)
 
 
-predictions = model_ffnn %>% predict(X_test) %>% k_argmax()
+predictions <- model_ffnn %>% predict(X_test) %>% k_argmax()
 
 df_test$predicted_target = as.array(predictions)
 
