@@ -13,7 +13,7 @@ Dataset credits: [Kaggle](https://www.kaggle.com/datasets/nareshbhat/health-care
    - logistic regression
    - random forests
    - neural networks
-3. Results
+3. Results and conclusions
 
 ## License
 
